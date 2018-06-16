@@ -8,6 +8,7 @@ import (
 	cfgreader "github.com/jianhan/pkg/configs"
 	"github.com/micro/go-micro"
 	"github.com/nats-io/go-nats-streaming"
+	"github.com/olivere/elastic"
 	"github.com/spf13/viper"
 )
 
@@ -29,14 +30,22 @@ func main() {
 	// init service
 	srv.Init()
 
+	// elastic client
+	elasticClient, err := elastic.NewClient()
+	if err != nil {
+		panic(err)
+	}
+
+	// nats streaming
 	sc, err := stan.Connect(viper.GetString("NATS_STREAMING_CLUSTER"), viper.GetString("NATS_STREAMING_CLIENT_ID"))
 	if err != nil {
 		panic(err)
 	}
 	defer sc.Close()
-	suppliersRunner := runners.NewSuppliersRunner(sc)
-	suppliersRunner.Run()
 
+	// start runners
+	suppliersRunner := runners.NewSuppliersRunner(sc, elasticClient)
+	suppliersRunner.Run()
 	if err := srv.Run(); err != nil {
 		panic(err)
 	}
