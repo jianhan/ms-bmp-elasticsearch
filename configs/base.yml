@@ -1,0 +1,8 @@
+service:
+  name: go.micro.srv.elasticsearch
+  register_ttl: 30
+  register_interval: 10
+  version: 1.0.0
+  metadata:
+    description: Elastic search service
+enable_debug: true
