@@ -55,7 +55,7 @@ func main() {
 	defer sc.Close()
 
 	// start runners
-	suppliersRunner := runners.NewSuppliersRunner(sc, elasticClient)
+	suppliersRunner := runners.NewSuppliersRunner(sc, elasticClient, "supplier")
 	suppliersRunner.Run()
 	if err := srv.Run(); err != nil {
 		panic(err)

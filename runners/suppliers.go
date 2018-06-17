@@ -63,11 +63,28 @@ func (r *suppliersRunner) init(ctx context.Context) error {
 }
 
 func (r *suppliersRunner) sync(msg *stan.Msg) {
-	r.elasticClient.DeleteIndex(r.index).Do(context.Background())
+	ctx := context.Background()
+	// unmarshal response back to native type
+	r.elasticClient.DeleteIndex(r.index).Do(ctx)
 	rsp := psuppliers.UpsertSuppliersRsp{}
 	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
 		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
 	}
 
-	r.elasticClient.Bulk().Index(r.index)
+	//bulk := r.elasticClient.BulkProcessor().Index().Index(r.index)
+	if len(rsp.Suppliers) == 0 {
+		// TODO: log here
+		return
+	}
+
+	// start to write into documents
+	bulkRequest := r.elasticClient.Bulk()
+	for _, s := range rsp.Suppliers {
+		req := elastic.NewBulkIndexRequest().Index(r.index).Type(r.index).Id(s.ID).Doc(s)
+		bulkRequest = bulkRequest.Add(req)
+	}
+	_, err := bulkRequest.Do(ctx)
+	if err != nil {
+		logrus.WithError(err).Errorf("error while trying to bulk sync suppliers")
+	}
 }
