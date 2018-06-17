@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "suppliers": {
+      "properties": {
+        "id": {
+          "type": "keyword",
+          "store": true,
+          "fielddata": true
+        },
+        "name": {
+          "type": "keyword",
+          "store": true,
+          "fielddata": true
+        },
+        "slug": {
+          "type": "keyword",
+          "store": true,
+          "fielddata": true
+        },
+        "logo_url": {
+          "type": "text",
+          "store": true,
+          "fielddata": true
+        },
+        "home_page_url": {
+          "type": "text",
+          "store": true,
+          "fielddata": true
+        },
+        "currency": {
+          "type": "text"
+        }
+      }
+    }
+  }
+}

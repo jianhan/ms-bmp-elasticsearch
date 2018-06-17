@@ -3,6 +3,8 @@ package runners
 import (
 	"context"
 
+	"io/ioutil"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/jianhan/ms-bmp-products/handlers"
 	psuppliers "github.com/jianhan/ms-bmp-products/proto/suppliers"
@@ -14,10 +16,12 @@ import (
 type suppliersRunner struct {
 	stanConn      stan.Conn
 	elasticClient *elastic.Client
+	mapString     string
+	index         string
 }
 
-func NewSuppliersRunner(stanConn stan.Conn, elasticClient *elastic.Client) Runner {
-	s := &suppliersRunner{stanConn: stanConn, elasticClient: elasticClient}
+func NewSuppliersRunner(stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
+	s := &suppliersRunner{stanConn: stanConn, elasticClient: elasticClient, index: index}
 	if err := s.init(context.Background()); err != nil {
 		logrus.WithError(err).Error("error while init suppliers runner")
 	}
@@ -34,14 +38,22 @@ func (r *suppliersRunner) Run() error {
 }
 
 func (r *suppliersRunner) init(ctx context.Context) error {
-	exists, err := r.elasticClient.IndexExists("suppliers").Do(ctx)
+	// read map
+	mapString, err := ioutil.ReadFile("./runners/supplier_map.json")
+	if err != nil {
+		return err
+	}
+	r.mapString = string(mapString)
+
+	// check if index exists
+	exists, err := r.elasticClient.IndexExists(r.index).Do(ctx)
 	if err != nil {
 		return err
 	}
 
 	// if index not exists create one
 	if !exists {
-		_, err = r.elasticClient.CreateIndex("suppliers").Do(ctx)
+		_, err = r.elasticClient.CreateIndex(r.index).BodyString(string(mapString)).Do(ctx)
 		if err != nil {
 			return err
 		}
@@ -51,9 +63,11 @@ func (r *suppliersRunner) init(ctx context.Context) error {
 }
 
 func (r *suppliersRunner) sync(msg *stan.Msg) {
-	r.elasticClient.DeleteIndex("suppliers").Do(context.Background())
+	r.elasticClient.DeleteIndex(r.index).Do(context.Background())
 	rsp := psuppliers.UpsertSuppliersRsp{}
 	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
 		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
 	}
+
+	r.elasticClient.Bulk().Index(r.index)
 }

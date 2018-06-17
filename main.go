@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"context"
+
 	"github.com/jianhan/ms-bmp-elasticsearch/runners"
 	cfgreader "github.com/jianhan/pkg/configs"
 	"github.com/micro/go-micro"
@@ -30,11 +32,20 @@ func main() {
 	// init service
 	srv.Init()
 
+	ctx := context.Background()
+
 	// elastic client
 	elasticClient, err := elastic.NewClient()
 	if err != nil {
 		panic(err)
 	}
+
+	// Ping the Elasticsearch server to get e.g. the version number
+	info, code, err := elasticClient.Ping(fmt.Sprintf("%s:%s", viper.GetString("ELASTICSEARCH_HOST"), viper.GetString("ELASTICSEARCH_PORT"))).Do(ctx)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
 
 	// nats streaming
 	sc, err := stan.Connect(viper.GetString("NATS_STREAMING_CLUSTER"), viper.GetString("NATS_STREAMING_CLIENT_ID"))
@@ -55,4 +66,6 @@ func init() {
 	viper.SetDefault("ENVIRONMENT", "development")
 	viper.SetDefault("NATS_STREAMING_CLUSTER", "test-cluster")
 	viper.SetDefault("NATS_STREAMING_CLIENT_ID", "elasticsearch-client")
+	viper.SetDefault("ELASTICSEARCH_HOST", "http://127.0.0.1")
+	viper.SetDefault("ELASTICSEARCH_PORT", "9200")
 }
