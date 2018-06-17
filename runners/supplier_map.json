@@ -7,29 +7,19 @@
     "suppliers": {
       "properties": {
         "id": {
-          "type": "keyword",
-          "store": true,
-          "fielddata": true
+          "type": "keyword"
         },
         "name": {
-          "type": "keyword",
-          "store": true,
-          "fielddata": true
+          "type": "keyword"
         },
         "slug": {
-          "type": "keyword",
-          "store": true,
-          "fielddata": true
+          "type": "keyword"
         },
         "logo_url": {
-          "type": "text",
-          "store": true,
-          "fielddata": true
+          "type": "text"
         },
         "home_page_url": {
-          "type": "text",
-          "store": true,
-          "fielddata": true
+          "type": "text"
         },
         "currency": {
           "type": "text"
