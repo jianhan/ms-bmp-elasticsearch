@@ -3,8 +3,9 @@ package runners
 import (
 	"context"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/gogo/protobuf/proto"
 	"github.com/jianhan/ms-bmp-products/handlers"
+	psuppliers "github.com/jianhan/ms-bmp-products/proto/suppliers"
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/olivere/elastic"
 	"github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ func NewSuppliersRunner(stanConn stan.Conn, elasticClient *elastic.Client) Runne
 }
 
 func (r *suppliersRunner) Run() error {
-	if _, err := r.stanConn.Subscribe(handlers.TopicSuppliersUpserted, r.suppliersUpserted); err != nil {
+	if _, err := r.stanConn.Subscribe(handlers.TopicSuppliersUpserted, r.sync); err != nil {
 		return err
 	}
 
@@ -49,7 +50,10 @@ func (r *suppliersRunner) init(ctx context.Context) error {
 	return nil
 }
 
-func (r *suppliersRunner) suppliersUpserted(msg *stan.Msg) {
-
-	spew.Dump(msg)
+func (r *suppliersRunner) sync(msg *stan.Msg) {
+	r.elasticClient.DeleteIndex("suppliers").Do(context.Background())
+	rsp := psuppliers.UpsertSuppliersRsp{}
+	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
+		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
+	}
 }
