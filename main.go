@@ -60,6 +60,13 @@ func main() {
 	if err := srv.Run(); err != nil {
 		panic(err)
 	}
+
+	// products runner
+	productsRunner := runners.NewProductsRunner(sc, elasticClient, "product")
+	productsRunner.Run()
+	if err := srv.Run(); err != nil {
+		panic(err)
+	}
 }
 
 func init() {
