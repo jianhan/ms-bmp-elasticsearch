@@ -5,36 +5,36 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/jianhan/ms-bmp-products/handlers"
-	pproducts "github.com/jianhan/ms-bmp-products/proto/products"
+	pcategories "github.com/jianhan/ms-bmp-products/proto/categories"
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/olivere/elastic"
 	"github.com/sirupsen/logrus"
 )
 
-type productsRunner struct {
+type categoriesRunner struct {
 	stanConn      stan.Conn
 	elasticClient *elastic.Client
 	index         string
 }
 
-func NewProductsRunner(stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
-	s := &productsRunner{stanConn: stanConn, elasticClient: elasticClient, index: index}
+func NewCategoriesRunner(stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
+	s := &categoriesRunner{stanConn: stanConn, elasticClient: elasticClient, index: index}
 	if err := s.init(context.Background()); err != nil {
-		logrus.WithError(err).Error("error while init products runner")
+		logrus.WithError(err).Error("error while init categories runner")
 	}
 
 	return s
 }
 
-func (r *productsRunner) Run() error {
-	if _, err := r.stanConn.Subscribe(handlers.TopicProductsUpserted, r.sync); err != nil {
+func (r *categoriesRunner) Run() error {
+	if _, err := r.stanConn.Subscribe(handlers.TopicCategoriesUpserted, r.sync); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *productsRunner) init(ctx context.Context) error {
+func (r *categoriesRunner) init(ctx context.Context) error {
 	// check if index exists
 	exists, err := r.elasticClient.IndexExists(r.index).Do(ctx)
 	if err != nil {
@@ -52,27 +52,27 @@ func (r *productsRunner) init(ctx context.Context) error {
 	return nil
 }
 
-func (r *productsRunner) sync(msg *stan.Msg) {
+func (r *categoriesRunner) sync(msg *stan.Msg) {
 	ctx := context.Background()
 	// unmarshal response back to native type
 	r.elasticClient.DeleteIndex(r.index).Do(ctx)
-	rsp := pproducts.UpsertProductsRsp{}
+	rsp := pcategories.UpsertCategoriesRsp{}
 	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
 		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
 	}
-	if len(rsp.Products) == 0 {
+	if len(rsp.Categories) == 0 {
 		// TODO: log here
 		return
 	}
 
 	// start to write into documents
 	bulkRequest := r.elasticClient.Bulk()
-	for _, p := range rsp.Products {
-		req := elastic.NewBulkIndexRequest().Index(r.index).Type(r.index).Id(p.ID).Doc(p)
+	for _, c := range rsp.Categories {
+		req := elastic.NewBulkIndexRequest().Index(r.index).Type(r.index).Id(c.ID).Doc(c)
 		bulkRequest = bulkRequest.Add(req)
 	}
 	_, err := bulkRequest.Do(ctx)
 	if err != nil {
-		logrus.WithError(err).Errorf("error while trying to bulk sync products")
+		logrus.WithError(err).Errorf("error while trying to bulk sync categories")
 	}
 }
