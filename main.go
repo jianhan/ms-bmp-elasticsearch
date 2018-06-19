@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/jianhan/ms-bmp-elasticsearch/runners"
+	"github.com/jianhan/ms-bmp-products/handlers"
 	cfgreader "github.com/jianhan/pkg/configs"
 	"github.com/micro/go-micro"
 	"github.com/nats-io/go-nats-streaming"
@@ -56,14 +57,22 @@ func main() {
 
 	// start runners
 	suppliersRunner := runners.NewSuppliersRunner(sc, elasticClient, "supplier")
-	suppliersRunner.Run()
-	if err := srv.Run(); err != nil {
+	if err := suppliersRunner.Run(); err != nil {
 		panic(err)
 	}
 
 	// products runner
 	productsRunner := runners.NewProductsRunner(sc, elasticClient, "product")
-	productsRunner.Run()
+	if err := productsRunner.Run(); err != nil {
+		panic(err)
+	}
+
+	// categories runner
+	categoriesRunner := runners.NewCategoriesRunner(ctx, handlers.TopicCategoriesUpserted, sc, elasticClient, "category")
+	if err := categoriesRunner.Run(); err != nil {
+		panic(err)
+	}
+
 	if err := srv.Run(); err != nil {
 		panic(err)
 	}
