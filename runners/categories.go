@@ -3,7 +3,6 @@ package runners
 import (
 	"context"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	pcategories "github.com/jianhan/ms-bmp-products/proto/categories"
 	"github.com/nats-io/go-nats-streaming"
@@ -44,35 +43,7 @@ func (r *categoriesRunner) Run() error {
 	return nil
 }
 
-//func (r *categoriesRunner) Run() error {
-//	if _, err := r.stanConn.Subscribe(handlers.TopicCategoriesUpserted, r.sync); err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
-//
-//func (r *categoriesRunner) init(ctx context.Context) error {
-//	// check if index exists
-//	exists, err := r.elasticClient.IndexExists(r.index).Do(ctx)
-//	if err != nil {
-//		return err
-//	}
-//
-//	// if index not exists create one
-//	if !exists {
-//		_, err = r.elasticClient.CreateIndex(r.index).Do(ctx)
-//		if err != nil {
-//			return err
-//		}
-//	}
-//
-//	return nil
-//}
-
 func (r *categoriesRunner) sync(msg *stan.Msg) {
-	spew.Dump("IN CHILD")
-	spew.Dump("RUNNNNNNNN")
 	ctx := context.Background()
 	// unmarshal response back to native type
 	r.elasticClient.DeleteIndex(r.index).Do(ctx)

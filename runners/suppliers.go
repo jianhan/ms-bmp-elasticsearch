@@ -2,9 +2,6 @@ package runners
 
 import (
 	"context"
-	"fmt"
-
-	"io/ioutil"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/jianhan/ms-bmp-products/handlers"
@@ -19,11 +16,22 @@ type suppliersRunner struct {
 	elasticClient *elastic.Client
 	mapString     string
 	index         string
+	topic         string
+	base
 }
 
-func NewSuppliersRunner(stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
-	s := &suppliersRunner{stanConn: stanConn, elasticClient: elasticClient, index: index}
-	if err := s.init(context.Background()); err != nil {
+func NewSuppliersRunner(ctx context.Context, topic string, stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
+	s := &suppliersRunner{
+		stanConn:      stanConn,
+		elasticClient: elasticClient,
+		index:         index,
+		topic:         topic,
+		base: base{
+			elasticClient: elasticClient,
+			index:         index,
+		},
+	}
+	if err := s.init(ctx); err != nil {
 		logrus.WithError(err).Error("error while init suppliers runner")
 	}
 
@@ -33,31 +41,6 @@ func NewSuppliersRunner(stanConn stan.Conn, elasticClient *elastic.Client, index
 func (r *suppliersRunner) Run() error {
 	if _, err := r.stanConn.Subscribe(handlers.TopicSuppliersUpserted, r.sync); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (r *suppliersRunner) init(ctx context.Context) error {
-	// read map
-	mapString, err := ioutil.ReadFile(fmt.Sprintf("./runners/%s_map.json", r.index))
-	if err != nil {
-		return err
-	}
-	r.mapString = string(mapString)
-
-	// check if index exists
-	exists, err := r.elasticClient.IndexExists(r.index).Do(ctx)
-	if err != nil {
-		return err
-	}
-
-	// if index not exists create one
-	if !exists {
-		_, err = r.elasticClient.CreateIndex(r.index).BodyString(string(mapString)).Do(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

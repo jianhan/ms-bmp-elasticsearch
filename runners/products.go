@@ -15,11 +15,22 @@ type productsRunner struct {
 	stanConn      stan.Conn
 	elasticClient *elastic.Client
 	index         string
+	topic         string
+	base
 }
 
-func NewProductsRunner(stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
-	s := &productsRunner{stanConn: stanConn, elasticClient: elasticClient, index: index}
-	if err := s.init(context.Background()); err != nil {
+func NewProductsRunner(ctx context.Context, topic string, stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
+	s := &productsRunner{
+		stanConn:      stanConn,
+		elasticClient: elasticClient,
+		index:         index,
+		topic:         topic,
+		base: base{
+			elasticClient: elasticClient,
+			index:         index,
+		},
+	}
+	if err := s.init(ctx); err != nil {
 		logrus.WithError(err).Error("error while init products runner")
 	}
 
@@ -29,24 +40,6 @@ func NewProductsRunner(stanConn stan.Conn, elasticClient *elastic.Client, index 
 func (r *productsRunner) Run() error {
 	if _, err := r.stanConn.Subscribe(handlers.TopicProductsUpserted, r.sync); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (r *productsRunner) init(ctx context.Context) error {
-	// check if index exists
-	exists, err := r.elasticClient.IndexExists(r.index).Do(ctx)
-	if err != nil {
-		return err
-	}
-
-	// if index not exists create one
-	if !exists {
-		_, err = r.elasticClient.CreateIndex(r.index).Do(ctx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
