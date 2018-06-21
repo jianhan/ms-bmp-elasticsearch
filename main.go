@@ -56,13 +56,13 @@ func main() {
 	defer sc.Close()
 
 	// start runners
-	suppliersRunner := runners.NewSuppliersRunner(sc, elasticClient, "supplier")
+	suppliersRunner := runners.NewSuppliersRunner(ctx, handlers.TopicSuppliersUpserted, sc, elasticClient, "supplier")
 	if err := suppliersRunner.Run(); err != nil {
 		panic(err)
 	}
 
 	// products runner
-	productsRunner := runners.NewProductsRunner(sc, elasticClient, "product")
+	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicProductsUpserted, sc, elasticClient, "product")
 	if err := productsRunner.Run(); err != nil {
 		panic(err)
 	}
