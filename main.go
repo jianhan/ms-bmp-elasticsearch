@@ -56,19 +56,19 @@ func main() {
 	defer sc.Close()
 
 	// start runners
-	suppliersRunner := runners.NewSuppliersRunner(ctx, handlers.TopicSuppliersUpserted, sc, elasticClient, "supplier")
+	suppliersRunner := runners.NewSuppliersRunner(ctx, handlers.TopicSyncSuppliersToElasticSearch, sc, elasticClient, "bmp.suppliers")
 	if err := suppliersRunner.Run(); err != nil {
 		panic(err)
 	}
 
 	// products runner
-	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicProductsUpserted, sc, elasticClient, "product")
+	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicProductsUpserted, sc, elasticClient, "bmp.products")
 	if err := productsRunner.Run(); err != nil {
 		panic(err)
 	}
 
 	// categories runner
-	categoriesRunner := runners.NewCategoriesRunner(ctx, handlers.TopicCategoriesUpserted, sc, elasticClient, "category")
+	categoriesRunner := runners.NewCategoriesRunner(ctx, handlers.TopicSyncCategoriesToElasticSearch, sc, elasticClient, "bmp.categories")
 	if err := categoriesRunner.Run(); err != nil {
 		panic(err)
 	}

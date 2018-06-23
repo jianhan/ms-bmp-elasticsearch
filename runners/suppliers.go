@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/jianhan/ms-bmp-products/handlers"
 	psuppliers "github.com/jianhan/ms-bmp-products/proto/suppliers"
 	"github.com/nats-io/go-nats-streaming"
 	"github.com/olivere/elastic"
@@ -39,7 +38,7 @@ func NewSuppliersRunner(ctx context.Context, topic string, stanConn stan.Conn, e
 }
 
 func (r *suppliersRunner) Run() error {
-	if _, err := r.stanConn.Subscribe(handlers.TopicSuppliersUpserted, r.sync); err != nil {
+	if _, err := r.stanConn.Subscribe(r.topic, r.sync); err != nil {
 		return err
 	}
 
