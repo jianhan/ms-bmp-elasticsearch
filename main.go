@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// products runner
-	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicProductsUpserted, sc, elasticClient, "bmp.products")
+	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicSyncProductsToElasticSearch, sc, elasticClient, "bmp.products")
 	if err := productsRunner.Run(); err != nil {
 		panic(err)
 	}
