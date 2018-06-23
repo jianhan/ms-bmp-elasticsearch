@@ -49,7 +49,7 @@ func (r *categoriesRunner) sync(msg *stan.Msg) {
 	r.elasticClient.DeleteIndex(r.index).Do(ctx)
 	rsp := pcategories.UpsertCategoriesRsp{}
 	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
-		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
+		logrus.WithError(err).WithField("msg", string(msg.Data)).Error("unable to unmarshal response")
 	}
 	if len(rsp.Categories) == 0 {
 		// TODO: log here

@@ -38,7 +38,7 @@ func NewProductsRunner(ctx context.Context, topic string, stanConn stan.Conn, el
 }
 
 func (r *productsRunner) Run() error {
-	if _, err := r.stanConn.Subscribe(handlers.TopicProductsUpserted, r.sync); err != nil {
+	if _, err := r.stanConn.Subscribe(handlers.TopicSyncProductsToElasticSearch, r.sync); err != nil {
 		return err
 	}
 
