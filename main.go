@@ -8,6 +8,7 @@ import (
 
 	"github.com/jianhan/ms-bmp-elasticsearch/runners"
 	"github.com/jianhan/ms-bmp-products/handlers"
+	pproducts "github.com/jianhan/ms-bmp-products/proto/products"
 	cfgreader "github.com/jianhan/pkg/configs"
 	"github.com/micro/go-micro"
 	"github.com/nats-io/go-nats-streaming"
@@ -62,7 +63,7 @@ func main() {
 	}
 
 	// products runner
-	productsRunner := runners.NewProductsRunner(ctx, handlers.TopicSyncProductsToElasticSearch, sc, elasticClient, "bmp.products")
+	productsRunner := runners.NewProductsRunner(ctx, pproducts.NewProductsServiceClient("", nil), handlers.TopicSyncProductsToElasticSearch, sc, elasticClient, "bmp.products")
 	if err := productsRunner.Run(); err != nil {
 		panic(err)
 	}

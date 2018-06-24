@@ -3,7 +3,6 @@ package runners
 import (
 	"context"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/jianhan/ms-bmp-products/handlers"
 	pproducts "github.com/jianhan/ms-bmp-products/proto/products"
 	"github.com/nats-io/go-nats-streaming"
@@ -12,19 +11,21 @@ import (
 )
 
 type productsRunner struct {
-	stanConn      stan.Conn
-	elasticClient *elastic.Client
-	index         string
-	topic         string
+	stanConn              stan.Conn
+	elasticClient         *elastic.Client
+	productsServiceClient pproducts.ProductsServiceClient
+	index                 string
+	topic                 string
 	base
 }
 
-func NewProductsRunner(ctx context.Context, topic string, stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
+func NewProductsRunner(ctx context.Context, productsServiceClient pproducts.ProductsServiceClient, topic string, stanConn stan.Conn, elasticClient *elastic.Client, index string) Runner {
 	s := &productsRunner{
 		stanConn:      stanConn,
 		elasticClient: elasticClient,
 		index:         index,
 		topic:         topic,
+		productsServiceClient: productsServiceClient,
 		base: base{
 			elasticClient: elasticClient,
 			index:         index,
@@ -49,12 +50,10 @@ func (r *productsRunner) sync(msg *stan.Msg) {
 	ctx := context.Background()
 	// unmarshal response back to native type
 	r.elasticClient.DeleteIndex(r.index).Do(ctx)
-	rsp := pproducts.UpsertProductsRsp{}
-	if err := proto.Unmarshal(msg.Data, &rsp); err != nil {
-		logrus.WithError(err).WithField("msg", msg.Data).Error("unable to unmarshal response")
-	}
-	if len(rsp.Products) == 0 {
-		// TODO: log here
+
+	rsp, err := r.productsServiceClient.Products(context.Background(), &pproducts.ProductsReq{})
+	if err != nil {
+		logrus.WithError(err).Error("unable to get products")
 		return
 	}
 
@@ -64,7 +63,7 @@ func (r *productsRunner) sync(msg *stan.Msg) {
 		req := elastic.NewBulkIndexRequest().Index(r.index).Type(r.index).Id(p.ID).Doc(p)
 		bulkRequest = bulkRequest.Add(req)
 	}
-	_, err := bulkRequest.Do(ctx)
+	_, err = bulkRequest.Do(ctx)
 	if err != nil {
 		logrus.WithError(err).Errorf("error while trying to bulk sync products")
 	}
